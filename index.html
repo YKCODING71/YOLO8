@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>YOLO 비전 실습실 | 리모컨·카드 인식</title>
+<style>
+:root{--blue:#2376e8;--ink:#153358;--muted:#7287a5;--line:#dce6f4;--bg:#f3f7fd;--green:#10af78}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,'Malgun Gothic',sans-serif}header{max-width:1250px;margin:auto;padding:24px 20px 15px;display:flex;justify-content:space-between;gap:14px;align-items:center}header h1{margin:4px 0 5px;font-size:32px;letter-spacing:-1px}.eyebrow{font-weight:800;color:#2479ef;font-size:11px;letter-spacing:2px}.subtitle,.hint{color:var(--muted);font-size:13px}.pill{background:#e4edff;color:#256ad4;border-radius:99px;padding:11px 15px;font-size:11px;font-weight:bold;white-space:nowrap}main{max-width:1250px;margin:0 auto;padding:0 20px 26px;display:grid;grid-template-columns:1fr 1fr;align-items:start;gap:18px}.panel{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 8px 28px rgba(35,62,109,.05);padding:20px;margin-bottom:17px}.section-title{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:800;margin:0}.num{font-size:11px;background:#e8f0ff;color:var(--blue);padding:6px 8px;border-radius:9px}.hint{margin:5px 0 16px}.camera{position:relative;background:#1b2b36;border-radius:12px;overflow:hidden;aspect-ratio:4/3;display:flex;justify-content:center;align-items:center}.camera video{width:100%;height:100%;object-fit:contain;display:none}.camera canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.camera .empty{color:#dce9f5;text-align:center;padding:20px}.camera .empty svg{width:72px;opacity:.75;margin-bottom:10px}.live{position:absolute;z-index:2;top:12px;left:12px;background:#112d45;color:white;border-radius:30px;font-size:11px;padding:7px 11px}.controls{display:flex;gap:8px;align-items:center;margin:12px 0}.ms{margin-left:auto;font-size:12px;color:var(--muted)}button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:pointer;background:var(--blue);color:white}button.secondary{background:#eaf0f8;color:#4c6486}button:disabled{opacity:.5;cursor:not-allowed}hr{border:0;border-top:1px solid #e8eef7;margin:15px 0}.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:#f3f7fc;border-radius:13px;padding:14px}.stat small,.caption{font-size:11px;color:#7b91b0}.stat strong{display:block;margin-top:6px;font-size:24px}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.dot{display:inline-block;width:9px;height:9px;background:#afbdcd;border-radius:50%;margin-right:5px}.dot.ok{background:var(--green)}.status{font-size:12px;color:#627d9e;margin-top:13px;line-height:1.55;overflow-wrap:anywhere}label{font-weight:750;font-size:12px;display:block;margin:15px 0 7px}input[type=file],input[type=text]{width:100%;border:1px solid #d3e0ef;border-radius:11px;padding:12px;color:var(--ink);background:#fbfdff}input[type=range]{width:100%;accent-color:var(--blue);margin:12px 0} .settingline{display:flex;justify-content:space-between;align-items:center;font-size:12px}.check{display:flex;align-items:center;gap:8px;font-size:12px;margin:14px 0;cursor:pointer}.check input{accent-color:var(--blue);width:17px;height:17px}.illustration{background:#f3f7fd;border:1px solid #e8eff9;border-radius:16px;min-height:290px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px;text-align:center}.illustration svg{width:min(100%,290px);height:210px}.objectlabel{margin-top:5px;font-weight:800;font-size:22px}.objectsub{font-size:12px;color:var(--muted);margin-top:4px}.footnote{color:#8194ab;font-size:11px;line-height:1.6} .tinybtn{font-size:11px;padding:8px 10px}.manual{display:flex;gap:7px;margin-top:9px}.message-error{color:#cf4251}.modes{display:flex;gap:8px;margin:12px 0}.mode{flex:1;background:#eaf0f8;color:#476587}.mode.active{background:#2376e8;color:#fff}.hidden{display:none}.connection-box{padding:12px 0}.log{background:#f3f7fc;border-radius:10px;padding:10px;font-size:12px;white-space:pre-wrap;min-height:42px;max-height:120px;overflow:auto}.manual-control{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.off-btn{background:#ffe8eb;color:#bc3347}@media(max-width:850px){main{grid-template-columns:1fr}header h1{font-size:26px}.pill{display:none}} 
+
+#collect-dialog{width:min(620px,calc(100% - 28px));max-height:calc(100% - 28px);padding:20px;border:1px solid var(--line);border-radius:20px;color:var(--ink);box-shadow:0 20px 70px #15335855}
+#collect-dialog::backdrop{background:#10253e99}
+.collect-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+#collect-video{display:block;width:100%;height:auto;max-height:48vh;object-fit:contain;background:#1b2b36}
+#collect-video[hidden],#collect-empty[hidden]{display:none}
+.collect-actions{margin-top:12px}
+</style>
+</head>
+<body>
+<header><div><div class="eyebrow">YKCODING · AIoT CLASSROOM</div><h1>YOLO 비전 실습실</h1><div class="subtitle">웹캠에서 객체를 인식하면 리모컨·카드 일러스트가 자동으로 나타납니다.</div></div><span class="pill">ONNX · YOLOv8 · WebCAM</span></header>
+<main>
+<section>
+<div class="panel">
+
+<div class="controls"><button id="collect-open" type="button" class="secondary">이미지 수집</button></div>
+<h2 class="section-title"><span class="num">02</span> 실시간 인식 테스트</h2><p class="hint">카메라 앞에 리모컨 또는 카드를 보여주세요. 인식된 객체를 박스로 표시합니다.</p>
+<div class="camera" id="camera"><div class="live" id="live">● OFFLINE</div><div class="empty" id="empty"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3"><rect x="5" y="17" width="42" height="32" rx="6"/><path d="m47 26 12-7v28L47 40"/><circle cx="26" cy="33" r="8"/></svg><div>카메라 시작 버튼을 눌러주세요.</div></div><video id="video" autoplay muted playsinline></video><canvas id="overlay"></canvas></div>
+<div class="controls"><button id="start">카메라 시작</button><button id="stop" class="secondary" disabled>중지</button><span class="ms" id="time">추론: — ms</span></div>
+<hr><h2 class="section-title"><span class="num">03</span> 인식 결과</h2><p class="hint">ID 0 → 리모컨 / ID 1 → 카드. 다른 ID는 일러스트를 표시하지 않습니다.</p>
+<div class="stats"><div class="stat"><small>탐지 ID</small><strong id="class-id">없음</strong></div><div class="stat"><small>최고 신뢰도</small><strong id="confidence">—</strong></div></div>
+<p id="detect-status" class="status">모델을 등록한 후 카메라를 시작하면 자동으로 인식합니다.</p>
+</div>
+</section>
+<aside>
+<div class="panel"><h2 class="section-title"><span class="num">04</span> 인식 객체 일러스트</h2><p class="hint">왼쪽 카메라에서 인식된 ID에 따라 그림이 자동으로 바뀝니다.</p>
+<div class="illustration" id="art" aria-live="polite"></div>
+<div class="manual"><button class="secondary tinybtn" id="demo0">그림 미리보기 · ID 0</button><button class="secondary tinybtn" id="demo1">ID 1</button><button class="secondary tinybtn" id="demo-clear">초기화</button></div>
+<p class="footnote">미리보기 버튼은 그림 확인용입니다. 실제 YOLO 인식 결과와는 무관합니다.</p>
+</div>
+<div class="panel"><h2 class="section-title"><span class="num">05</span> ESP32 통신 설정</h2>
+<p class="hint">Wi-Fi(IP) 또는 USB 시리얼(COM)을 선택하세요. YOLO ID 0 = LED ON, ID 1 = LED OFF.</p>
+<div class="modes"><button type="button" class="mode active" id="mode-wifi">Wi-Fi · IP</button><button type="button" class="mode" id="mode-serial">USB 시리얼 · COM</button></div>
+<div id="wifi-settings" class="connection-box"><label for="esp-ip">ESP32 IP 주소</label><input id="esp-ip" type="text" value="192.168.0.20" placeholder="192.168.0.20"/><p class="footnote">ESP32 웹서버의 /on, /off 경로로 명령을 전송합니다.</p></div>
+<div id="serial-settings" class="connection-box hidden"><p class="footnote">ESP32 USB 케이블을 연결하고 아래의 '포트 연결'을 눌러 목록에서 COM 포트를 선택하세요. Chrome/Edge PC에서 HTTPS 또는 localhost로 접속해야 합니다. Arduino 시리얼 모니터는 닫아 주세요.</p><div class="settingline"><strong>통신속도</strong><strong>115200 baud</strong></div></div>
+<div class="row"><button id="connect">연결 확인</button><button id="disconnect" class="secondary">연결 해제</button></div>
+<p class="status" id="connect-status"><span class="dot"></span> 연결 전 · Wi-Fi 모드</p>
+<hr/><label class="check"><input id="auto-led" type="checkbox" checked/> YOLO 인식 시 LED 자동 제어</label>
+<div class="stats"><div class="stat"><small>마지막 전송 명령</small><strong id="last-command">—</strong></div><div class="stat"><small>요청한 LED 상태</small><strong id="led-status">—</strong></div></div>
+<div class="manual-control"><button id="manual-on">LED ON 테스트</button><button id="manual-off" class="off-btn">LED OFF 테스트</button></div>
+<p class="footnote">ID 0이 동시에 탐지되면 ON을 우선합니다. 다른 ID 또는 탐지 없음이면 마지막 LED 상태를 유지합니다. 중복 명령은 보내지 않습니다. USB 연결 중에는 다른 프로그램에서 같은 COM 포트를 열지 마세요.</p>
+<label>실행 로그</label><div class="log" id="comm-log">준비 완료</div>
+</div>
+<div class="panel"><h2 class="section-title"><span class="num">01</span> YOLO 모델 등록</h2><p class="hint">학습한 YOLOv8 탐지 모델의 <code>best.onnx</code> 파일을 선택하세요.</p>
+<label for="model">ONNX 모델</label><input type="file" id="model" accept=".onnx" />
+<div class="status" id="model-status"><span class="dot"></span> 모델 등록 전</div>
+<hr><div class="settingline"><strong>신뢰도 기준</strong><b id="threshold-display">50%</b></div><input id="threshold" type="range" min="10" max="95" value="50" step="5" />
+<p class="footnote">모델 형식: YOLOv8 detect, 클래스 0=리모컨, 1=카드. ONNX Runtime Web을 통해 브라우저에서 추론합니다.</p>
+</div>
+</aside>
+</main>
+
+<dialog id="collect-dialog" aria-labelledby="collect-title">
+  <div class="collect-heading">
+    <h2 class="section-title" id="collect-title">이미지 수집</h2>
+    <form method="dialog"><button type="submit" class="secondary">닫기</button></form>
+  </div>
+  <div class="camera">
+    <p class="empty" id="collect-empty">웹캠이나 공유 화면을 선택하세요.</p>
+    <video id="collect-video" autoplay muted playsinline hidden></video>
+  </div>
+  <div class="row collect-actions">
+    <button id="collect-camera" type="button" class="secondary">웹캠 켜기</button>
+    <button id="collect-screen" type="button" class="secondary">화면 공유</button>
+    <button id="collect-folder" type="button" class="secondary">저장 위치 선택</button>
+    <button id="collect-shot" type="button" disabled>사진 찍기 · <span id="collect-count">0</span>장</button>
+  </div>
+  <p class="footnote" id="collect-location">선택한 폴더 안의 image 폴더에 저장합니다.</p>
+  <p id="collect-status" class="status" role="status"></p>
+</dialog>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const video=$('video'),canvas=$('overlay'),ctx=canvas.getContext('2d'),art=$('art');
+let session=null,stream=null,running=false,busy=false,raf=0,lastInfer=0, modelSize=640;
+let inferenceCanvas=document.createElement('canvas');let ic=inferenceCanvas.getContext('2d',{willReadFrequently:true});
+const emptySvg=`<svg viewBox="0 0 300 210" fill="none" aria-hidden="true"><circle cx="150" cy="102" r="76" fill="#e8f0fb"/><path d="M110 110h80M150 70v80" stroke="#aabbd1" stroke-width="8" stroke-linecap="round"/><circle cx="150" cy="109" r="53" stroke="#bacbe0" stroke-width="5" stroke-dasharray="8 9"/></svg>`;
+const remoteSvg=`<svg viewBox="0 0 300 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="리모컨 일러스트"><ellipse cx="150" cy="188" rx="74" ry="12" fill="#dbe6f5"/><g transform="translate(115 7) rotate(11 35 91)"><rect x="0" y="0" width="70" height="183" rx="23" fill="#233b59"/><rect x="7" y="7" width="56" height="169" rx="18" fill="#364f6c"/><rect x="15" y="17" width="40" height="32" rx="8" fill="#d3e9f7"/><circle cx="35" cy="69" r="13" fill="#ff6475"/><path d="M35 60v10M29 66a9 9 0 1 0 12 0" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"/><circle cx="35" cy="105" r="18" fill="#8fb0d6"/><circle cx="35" cy="105" r="7" fill="#f1f7ff"/><g fill="#a9c7e8"><rect x="16" y="135" width="16" height="11" rx="5"/><rect x="38" y="135" width="16" height="11" rx="5"/><rect x="16" y="153" width="16" height="11" rx="5"/><rect x="38" y="153" width="16" height="11" rx="5"/></g></g><path d="M72 62l11-11m-5 27H62m173-26 10-9" stroke="#91b4e1" stroke-width="5" stroke-linecap="round"/></svg>`;
+const cardSvg=`<svg viewBox="0 0 300 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="카드 일러스트"><ellipse cx="150" cy="183" rx="100" ry="12" fill="#dbe6f5"/><g transform="translate(34 30) rotate(-8 116 75)"><rect x="8" y="8" width="232" height="148" rx="17" fill="#c5d7f4"/><rect x="0" y="0" width="232" height="148" rx="17" fill="#3180e9"/><path d="M0 45h232v27H0z" fill="#163d80"/><rect x="20" y="88" width="42" height="30" rx="5" fill="#ffd884"/><path d="M41 88v30M20 103h42" stroke="#ebad46" stroke-width="2"/><rect x="82" y="97" width="103" height="7" rx="3.5" fill="#bddcff"/><rect x="82" y="112" width="66" height="7" rx="3.5" fill="#bddcff"/><circle cx="195" cy="118" r="13" fill="#fff" opacity=".7"/><circle cx="209" cy="118" r="13" fill="#7ac8fc" opacity=".8"/><path d="M18 22h67" stroke="#b0d5ff" stroke-width="5" stroke-linecap="round"/></g></svg>`;
+function renderArt(id){let image=id===0?remoteSvg:id===1?cardSvg:emptySvg;let title=id===0?'리모컨':id===1?'카드':'인식 대기 중';let sub=id===0?'ID 0 · REMOTE CONTROL':id===1?'ID 1 · CARD':'YOLO가 객체를 인식하면 그림이 나타납니다';art.innerHTML=image+`<div class="objectlabel">${title}</div><div class="objectsub">${sub}</div>`;}
+renderArt(-1);
+$('demo0').onclick=()=>renderArt(0);$('demo1').onclick=()=>renderArt(1);$('demo-clear').onclick=()=>renderArt(-1);
+
+// === ESP32 communication: Wi-Fi or Web Serial ===
+let mode='wifi', serialPort=null, serialWriter=null, serialReader=null;
+let serialConnected=false, wifiConnected=false, commandQueue=Promise.resolve();
+let lastCommand=null, lastMode=null;
+function logComm(message){let e=$('comm-log');e.textContent=`${new Date().toLocaleTimeString()} ${message}\n`+e.textContent.slice(0,1000);}
+function showConnection(message,ok=false){$('connect-status').innerHTML=`<span class="dot ${ok?'ok':''}"></span> ${escapeHtml(message)}`;}
+function setMode(next){if(next===mode)return;disconnectComm();mode=next;$('mode-wifi').classList.toggle('active',next==='wifi');$('mode-serial').classList.toggle('active',next==='serial');$('wifi-settings').classList.toggle('hidden',next!=='wifi');$('serial-settings').classList.toggle('hidden',next!=='serial');$('connect').textContent=next==='wifi'?'연결 확인':'포트 연결';showConnection('연결 전 · '+(next==='wifi'?'Wi-Fi':'시리얼')+' 모드');}
+$('mode-wifi').onclick=()=>setMode('wifi');$('mode-serial').onclick=()=>setMode('serial');
+$('esp-ip').oninput=()=>{wifiConnected=false;lastCommand=null;showConnection('IP 변경됨 · 다시 연결 확인');};
+function baseUrl(){let value=$('esp-ip').value.trim().replace(/^https?:\/\//i,'').replace(/\/$/,'');if(!/^[a-z\d.:-]+$/i.test(value))throw Error('올바른 IP 주소를 입력하세요.');return 'http://'+value;}
+async function connectComm(){
+if(mode==='wifi'){
+ try{let res=await fetch(baseUrl()+'/status',{signal:AbortSignal.timeout(2200),cache:'no-store'});if(!res.ok)throw Error('HTTP '+res.status);wifiConnected=true;lastCommand=null;showConnection('Wi-Fi 연결 확인 완료',true);logComm('Wi-Fi 상태 응답 확인');}
+ catch(e){wifiConnected=false;showConnection('Wi-Fi 연결 실패: '+e.message);logComm('IP 접속 실패 · ESP32 IP/전원/CORS 확인');}
+ return;
+}
+if(!('serial' in navigator)){showConnection('이 브라우저는 Web Serial 미지원 (PC Chrome 또는 Edge 권장)');return;}
+try{
+ if(serialConnected)return;
+ const port=await navigator.serial.requestPort();
+ await port.open({baudRate:115200});
+ serialPort=port;
+ serialWriter=port.writable.getWriter();
+ serialConnected=true;lastCommand=null;showConnection('COM 포트 연결 완료 · 115200 baud',true);logComm('시리얼 포트 연결 완료');
+ // Some boards reboot on port open: wait a short time before the first command.
+ await new Promise(r=>setTimeout(r,1300));
+}catch(e){showConnection('시리얼 연결 실패: '+e.message);logComm('포트 연결 오류: '+e.message);if(serialWriter){try{serialWriter.releaseLock();}catch{}}serialWriter=null;if(serialPort){try{await serialPort.close();}catch{}}serialPort=null;serialConnected=false;}
+}
+async function disconnectComm(){
+ wifiConnected=false;lastCommand=null;
+ // Complete queued writes before closing the port.
+ try{await commandQueue;}catch{}
+ if(serialWriter){try{serialWriter.releaseLock();}catch{}serialWriter=null;}
+ if(serialPort){try{await serialPort.close();}catch(e){logComm('포트 닫기: '+e.message);}serialPort=null;}
+ serialConnected=false;showConnection('연결 해제됨');
+}
+$('connect').onclick=()=>connectComm();$('disconnect').onclick=()=>disconnectComm();
+if('serial' in navigator)navigator.serial.addEventListener('disconnect',()=>{serialConnected=false;serialWriter=null;serialPort=null;lastCommand=null;showConnection('USB 포트 분리됨');logComm('ESP32 USB 연결이 끊어졌습니다.');});
+async function sendCommand(command,manual=false){
+ if(!['ON','OFF'].includes(command))return;
+ if(!manual&&command===lastCommand&&mode===lastMode)return;
+ if(mode==='serial'&&!serialConnected){if(manual)logComm('먼저 COM 포트를 연결하세요.');return;}
+ if(mode==='wifi'&&!wifiConnected){if(manual)logComm('먼저 Wi-Fi 연결 확인을 하세요.');return;}
+ lastCommand=command;lastMode=mode;
+ $('last-command').textContent=command;$('led-status').textContent=command==='ON'?'ON 요청':'OFF 요청';
+ logComm(`${mode==='serial'?'COM':'Wi-Fi'} → ${command}`);
+ if(mode==='serial'){
+   commandQueue=commandQueue.then(async()=>{if(serialWriter)await serialWriter.write(new TextEncoder().encode(command+'\n'));}).catch(e=>{serialConnected=false;lastCommand=null;showConnection('시리얼 전송 실패: '+e.message);});
+ }else{
+   // No response waiting in recognition loop; HTTP is sent asynchronously.
+   fetch(baseUrl()+(command==='ON'?'/on':'/off'),{mode:'cors',cache:'no-store',signal:AbortSignal.timeout(3000)}).catch(e=>{wifiConnected=false;lastCommand=null;showConnection('Wi-Fi 전송 오류: '+e.message);});
+ }
+}
+$('manual-on').onclick=()=>sendCommand('ON',true);$('manual-off').onclick=()=>sendCommand('OFF',true);
+function autoLed(dets){if(!$('auto-led').checked)return;const ids=dets.filter(x=>x.cls===0||x.cls===1);if(!ids.length)return;if(ids.some(x=>x.cls===0))void sendCommand('ON');else void sendCommand('OFF');}
+
+$('threshold').oninput=()=>{$('threshold-display').textContent=$('threshold').value+'%'};
+function status(id,msg,error=false){$(id).innerHTML=(error?'<span class="message-error">':'')+msg+(error?'</span>':'');}
+function getDimensions(dims){let d=dims||[]; if(d.length===4){let h=Number(d[2]),w=Number(d[3]);if(h>0&&w>0&&h<=1280&&w<=1280)return [h,w];}return [640,640];}
+$('model').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;session=null;status('model-status','모델 불러오는 중…');try{
+if(typeof ort==='undefined')throw Error('ONNX Runtime 라이브러리를 불러올 수 없습니다. 인터넷 연결을 확인하세요.');
+ort.env.wasm.numThreads=1;const buf=await file.arrayBuffer();session=await ort.InferenceSession.create(buf,{executionProviders:['wasm'],graphOptimizationLevel:'all'});
+let name=session.inputNames[0],input=session.inputMetadata?.[name];let dims=getDimensions(input?.dimensions||input?.dims);modelSize=dims[0];status('model-status',`<span class="dot ok"></span> 모델 등록 완료 · ${file.name} (${dims.join(' × ')})`);
+$('detect-status').textContent='모델이 준비되었습니다. 카메라 앞에 객체를 보여주세요.';
+}catch(err){session=null;status('model-status','모델 로드 실패: '+escapeHtml(err.message),true);}}
+function escapeHtml(str){return String(str).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+$('start').onclick=async()=>{if(running)return;try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:640},height:{ideal:480}},audio:false});video.srcObject=stream;await video.play();video.style.display='block';$('empty').style.display='none';$('start').disabled=true;$('stop').disabled=false;$('live').textContent='● LIVE';running=true;raf=requestAnimationFrame(tick);}catch(err){status('detect-status','카메라 접근 실패: '+escapeHtml(err.message)+' (localhost 또는 HTTPS에서 실행하세요.)',true);}}
+$('stop').onclick=stop;
+function stop(){running=false;cancelAnimationFrame(raf);if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;video.pause();video.srcObject=null;video.style.display='none';$('empty').style.display='block';ctx.clearRect(0,0,canvas.width,canvas.height);$('start').disabled=false;$('stop').disabled=true;$('live').textContent='● OFFLINE';$('class-id').textContent='없음';$('confidence').textContent='—';renderArt(-1);}
+function letterbox(){const W=modelSize,H=modelSize,vw=video.videoWidth,vh=video.videoHeight;const scale=Math.min(W/vw,H/vh),dw=Math.round(vw*scale),dh=Math.round(vh*scale),left=Math.floor((W-dw)/2),top=Math.floor((H-dh)/2);inferenceCanvas.width=W;inferenceCanvas.height=H;ic.fillStyle='#727272';ic.fillRect(0,0,W,H);ic.drawImage(video,0,0,vw,vh,left,top,dw,dh);return {scale,left,top,vw,vh,W,H};}
+function makeTensor(){const {data}=ic.getImageData(0,0,modelSize,modelSize),size=modelSize*modelSize,buf=new Float32Array(size*3);for(let i=0,j=0;i<data.length;i+=4,j++){buf[j]=data[i]/255;buf[j+size]=data[i+1]/255;buf[j+size*2]=data[i+2]/255;}return new ort.Tensor('float32',buf,[1,3,modelSize,modelSize]);}
+function iou(a,b){let x=Math.max(0,Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x));let y=Math.max(0,Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y));let area=x*y;return area/(a.w*a.h+b.w*b.h-area+1e-9);}
+function nms(items){items.sort((a,b)=>b.score-a.score);let out=[];for(const b of items){if(!out.some(x=>x.cls===b.cls&&iou(x,b)>.45))out.push(b);if(out.length>=30)break;}return out;}
+function parseOutput(result,map){const o=result[session.outputNames[0]]||Object.values(result)[0],d=o.dims,arr=o.data;const limit=Number($('threshold').value)/100;let detections=[];
+if(d.length!==3)throw Error('지원하지 않는 ONNX 출력 차원: '+JSON.stringify(d));
+const a=d[1],b=d[2];
+// YOLOv8 raw: [1,4+C,N] 또는 [1,N,4+C]. Export with nms=True: [1,N,6] as xyxy,confidence,class.
+const channelsFirst=a>=5&&a<=100&&(b>a || b>500);const n=channelsFirst?b:a,features=channelsFirst?a:b;
+const read=(i,j)=>channelsFirst?Number(arr[j*n+i]):Number(arr[i*features+j]);
+if(features<6)throw Error('출력의 클래스 수가 2개 이상이어야 합니다.');
+const nmsOutput=features===6&&n<=500;
+for(let i=0;i<n;i++){
+let cls=-1,score=0,x,y,w,h;
+if(nmsOutput){score=read(i,4);cls=Math.round(read(i,5));x=read(i,0);y=read(i,1);w=read(i,2)-x;h=read(i,3)-y;}
+else {for(let c=4;c<features;c++){const s=read(i,c);if(s>score){score=s;cls=c-4;}}const cx=read(i,0),cy=read(i,1);w=read(i,2);h=read(i,3);x=cx-w/2;y=cy-h/2;}
+if(score<limit||!Number.isFinite(x)||!Number.isFinite(y)||w<=0||h<=0)continue;
+// Export output usually uses input pixel coordinates; support normalized boxes too.
+if(Math.max(Math.abs(x),Math.abs(y),Math.abs(w),Math.abs(h))<=2){x*=map.W;y*=map.H;w*=map.W;h*=map.H;}
+const rx=(x-map.left)/map.scale,ry=(y-map.top)/map.scale,rw=w/map.scale,rh=h/map.scale;
+if(rx+rw<0||ry+rh<0||rx>map.vw||ry>map.vh)continue;
+detections.push({x:Math.max(0,rx),y:Math.max(0,ry),w:Math.min(rw,map.vw-Math.max(0,rx)),h:Math.min(rh,map.vh-Math.max(0,ry)),score,cls});
+}return nms(detections);}
+function draw(dets){canvas.width=video.videoWidth;canvas.height=video.videoHeight;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.lineWidth=Math.max(2,canvas.width/250);ctx.font=`bold ${Math.max(14,canvas.width/40)}px Arial`;for(const b of dets){if(b.w<=0||b.h<=0)continue;const color=b.cls===0?'#00dca8':b.cls===1?'#ffcf52':'#ef80f7',name=b.cls===0?'리모컨':b.cls===1?'카드':'ID '+b.cls,label=`${name} ${(b.score*100).toFixed(0)}%`;ctx.strokeStyle=color;ctx.strokeRect(b.x,b.y,b.w,b.h);const textW=ctx.measureText(label).width+14,ty=Math.max(22,b.y);ctx.fillStyle=color;ctx.fillRect(b.x,ty-22,textW,24);ctx.fillStyle='#10253e';ctx.fillText(label,b.x+7,ty-5);}}
+async function tick(now){if(!running)return;raf=requestAnimationFrame(tick);if(!session||busy||video.readyState<2||now-lastInfer<120)return;busy=true;lastInfer=now;const start=performance.now();try{let map=letterbox(),input=makeTensor(),outputs=await session.run({[session.inputNames[0]]:input}),dets=parseOutput(outputs,map);draw(dets);autoLed(dets);$('time').textContent=`추론: ${Math.round(performance.now()-start)} ms`;
+const recognized=dets.filter(d=>d.cls===0||d.cls===1).sort((a,b)=>b.score-a.score),best=recognized[0];
+if(best){$('class-id').textContent=best.cls;$('confidence').textContent=(best.score*100).toFixed(1)+'%';renderArt(best.cls);status('detect-status',`<span class="dot ok"></span> ${best.cls===0?'리모컨':'카드'} 인식 성공 · ${dets.length}개 탐지`);}else{$('class-id').textContent='없음';$('confidence').textContent='—';renderArt(-1);status('detect-status','탐지된 ID 0 또는 ID 1 객체가 없습니다.');}
+}catch(err){status('detect-status','추론 오류: '+escapeHtml(err.message),true);console.error(err);running=false;$('stop').click();}finally{busy=false;}}
+</script>
+
+<script>
+(() => {
+  const get = id => document.getElementById('collect-' + id);
+  const dialog = get('dialog');
+  const video = get('video');
+  const canvas = document.createElement('canvas');
+  let stream, directory, filenames = new Set(), nextNumber = 0;
+  let saving = false, choosing = false, opening = false, session = 0;
+  const status = text => { get('status').textContent = text; };
+
+  function update() {
+    get('shot').disabled = !directory || !stream || video.readyState < 2 || saving || choosing || opening;
+    get('folder').disabled = saving || choosing;
+    get('camera').disabled = opening;
+    get('screen').disabled = opening;
+  }
+
+  function stopPreview() {
+    stream?.getTracks().forEach(track => track.stop());
+    stream = null;
+    video.srcObject = null;
+    video.hidden = true;
+    get('empty').hidden = false;
+    update();
+  }
+
+  async function startPreview(source) {
+    if (opening || !dialog.open) return;
+    if (!navigator.mediaDevices?.[source]) {
+      status('현재 브라우저에서 이 캡처 방식을 사용할 수 없습니다.');
+      return;
+    }
+    const view = session;
+    opening = true;
+    update();
+    try {
+      const selected = await navigator.mediaDevices[source]({video:true, audio:false});
+      if (!dialog.open || view !== session) {
+        selected.getTracks().forEach(track => track.stop());
+        return;
+      }
+      stopPreview();
+      stream = selected;
+      video.srcObject = stream;
+      video.hidden = false;
+      get('empty').hidden = true;
+      for (const track of selected.getVideoTracks()) {
+        track.addEventListener('ended', () => {
+          if (stream === selected) {
+            stopPreview();
+            status('캡처 소스가 종료되었습니다.');
+          }
+        }, {once:true});
+      }
+      await video.play();
+      status(directory ? '사진 찍기 버튼을 누르세요.' : '저장 위치를 선택하세요.');
+    } catch (error) {
+      if (view === session && error.name !== 'AbortError') status('캡처 소스를 열 수 없습니다. ' + error.message);
+    } finally { opening = false; update(); }
+  }
+
+  async function chooseFolder() {
+    if (!window.showDirectoryPicker) {
+      status('폴더에 직접 저장하려면 PC용 Chrome 또는 Edge에서 이 페이지를 여세요.');
+      return;
+    }
+    choosing = true;
+    update();
+    try {
+      const parent = await window.showDirectoryPicker({id:'yolo-image-collection', mode:'readwrite'});
+      const selected = parent.name.toLowerCase() === 'image'
+        ? parent : await parent.getDirectoryHandle('image', {create:true});
+      const existing = new Set();
+      let next = 0;
+      for await (const entry of selected.values()) {
+        const match = /^img_(\d+)\.jpg$/i.exec(entry.name);
+        if (entry.kind === 'file' && match) {
+          existing.add(entry.name.toLowerCase());
+          next = Math.max(next, Number(match[1]) + 1);
+        }
+      }
+      directory = selected;
+      filenames = existing;
+      nextNumber = next;
+      get('count').textContent = filenames.size;
+      get('location').textContent = '저장 폴더 ' + (parent === selected ? selected.name : parent.name + '/image');
+      status('저장 위치를 선택했습니다.');
+    } catch (error) {
+      if (error.name !== 'AbortError') status('폴더를 열 수 없습니다. ' + error.message);
+    } finally { choosing = false; update(); }
+  }
+
+  async function saveFrame() {
+    if (get('shot').disabled || !dialog.open) return;
+    saving = true;
+    update();
+    try {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', .94));
+      if (!blob) throw new Error('JPEG 생성에 실패했습니다.');
+      let name;
+      while (true) {
+        name = 'img_' + nextNumber + '.jpg';
+        try {
+          await directory.getFileHandle(name);
+          filenames.add(name);
+          nextNumber++;
+        } catch (error) {
+          if (error.name !== 'NotFoundError') throw error;
+          break;
+        }
+      }
+      const file = await directory.getFileHandle(name, {create:true});
+      const writer = await file.createWritable();
+      try {
+        await writer.write(blob);
+        await writer.close();
+      } catch (error) {
+        try { await writer.abort(); } catch {}
+        throw error;
+      }
+      nextNumber++;
+      filenames.add(name);
+      get('count').textContent = filenames.size;
+      status(name + ' 저장 완료');
+    } catch (error) { status('저장할 수 없습니다. ' + error.message); }
+    finally { saving = false; update(); }
+  }
+
+  get('open').onclick = () => dialog.showModal();
+  get('camera').onclick = () => startPreview('getUserMedia');
+  get('screen').onclick = () => startPreview('getDisplayMedia');
+  get('folder').onclick = chooseFolder;
+  get('shot').onclick = saveFrame;
+  video.addEventListener('loadeddata', update);
+  dialog.addEventListener('close', () => { session++; stopPreview(); });
+  dialog.addEventListener('keydown', event => {
+    if (!event.repeat && event.key.toLowerCase() === 'c' && !event.ctrlKey && !event.altKey && !event.metaKey) {
+      event.preventDefault();
+      void saveFrame();
+    }
+  });
+})();
+</script>
+</body>
+</html>
